@@ -41,7 +41,7 @@ impl Editor {
 
     pub fn editor_open(&mut self) {
         let line: Vec<u8> = "Hello, world!".as_bytes().to_vec();
-        let line_len: usize = 13;
+        let line_len: usize = line.len();
 
         self.row.size = line_len;
         self.row.content = line;
@@ -62,6 +62,7 @@ impl Editor {
 
         match c {
             c if c == ctrl_key('q') => Err(()),
+            c if c == ctrl_key('c') => Err(()),
             b'h' | b'j' | b'k' | b'l' => {
                 self.screen.move_cursor(c);
                 Ok(())
