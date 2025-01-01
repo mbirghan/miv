@@ -15,8 +15,10 @@ struct Erow {
 }
 
 pub struct Editor {
+    // Struct fields are dropped in the same order of declaration,
+    // so screen will be dropped before _stdin.
+    // This ensures raw mode is still enabled while we clean up the screen.
     screen: Screen,
-
     _stdin: StdinRawMode,
 
     num_rows: usize,

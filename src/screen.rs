@@ -43,7 +43,9 @@ impl Screen {
 
     pub fn editor_refresh_screen(&mut self) {
         self.append_abuf("\x1b[?25l");
+        // Clears the entire screen
         // self.append_abuf("\x1b[2J");
+        // Moves the cursor to the top left corner
         self.append_abuf("\x1b[H");
 
         // self.append_abuf(&format!("{}, {}", self.screen.0, self.screen.1));
@@ -101,5 +103,14 @@ impl Screen {
                 self.append_abuf("\r\n");
             }
         }
+    }
+}
+
+impl Drop for Screen {
+    fn drop(&mut self) {
+        self.abuf.clear();
+        self.append_abuf("\x1b[2J");
+        self.append_abuf("\x1b[H");
+        write_flush(str::from_utf8(&self.abuf).unwrap());
     }
 }
