@@ -1,3 +1,4 @@
+use crate::constants::VERSION;
 use crate::content::Content;
 use core::str;
 use std::{
@@ -21,8 +22,7 @@ pub struct Screen {
     cursor: (usize, usize),
 
     abuf: Vec<u8>,
-    // TODO: This should be an Option<Content>
-    content: Content,
+    content: Option<Content>,
 }
 
 impl Screen {
@@ -35,7 +35,7 @@ impl Screen {
             size,
             cursor,
             abuf,
-            content: Content::new(),
+            content: None,
         });
     }
 
@@ -64,7 +64,7 @@ impl Screen {
 
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_rows();
+        self.draw_content();
 
         self.append_abuf(&format!(
             "\x1b[{};{}H",
@@ -104,15 +104,31 @@ impl Screen {
         }
     }
 
-    fn draw_rows(&mut self) {
-        for y in 0..self.get_height() {
-            if y >= self.content.num_rows {
-                self.append_abuf("~");
-            } else {
-                // TODO: This is a hack to get the line to render
-                let line = self.content.lines[y].clone();
-                self.abuf.extend(line.as_bytes().to_vec());
+    fn draw_content(&mut self) {
+        // Extract content reference before the mutable borrows
+        let content_len = self.content.as_ref().map(|c| c.lines.len()).unwrap_or(0);
+        match &self.content {
+            Some(_) => {
+                self.draw_content_rows().unwrap();
+                self.draw_filler_rows(content_len);
             }
+            None => self.draw_welcome_message(),
+        }
+    }
+    fn draw_content_rows(&mut self) -> Result<(), Error> {
+        let lines = self
+            .content
+            .as_ref()
+            .unwrap_or(&Content::new())
+            .lines
+            .clone();
+
+        // Only iterate up to the minimum of screen height and content length
+        let visible_lines = lines.len().min(self.get_height());
+
+        for y in 0..visible_lines {
+            let line = &lines[y]; // Use reference instead of clone
+            self.append_abuf(line); // No need for to_vec()
 
             // Clears the line we are rerendering
             self.append_abuf("\x1b[K");
@@ -120,6 +136,31 @@ impl Screen {
                 self.append_abuf("\r\n");
             }
         }
+
+        Ok(())
+    }
+
+    fn draw_filler_rows(&mut self, start_row: usize) {
+        for y in start_row..self.get_height() {
+            self.append_abuf("~");
+
+            // Clears the line we are rerendering
+            self.append_abuf("\x1b[K");
+
+            if y < self.get_height() - 1 {
+                self.append_abuf("\r\n");
+            }
+        }
+    }
+
+    fn draw_welcome_message(&mut self) {
+        let welcome_message = format!("Kilo editor -- version {}", VERSION);
+        self.append_abuf(&welcome_message);
+        // Clears the line we are rerendering
+        self.append_abuf("\x1b[K");
+
+        self.append_abuf("\r\n");
+        self.draw_filler_rows(1);
     }
 }
 
