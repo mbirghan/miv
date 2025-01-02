@@ -74,10 +74,29 @@ impl Editor {
     }
 }
 
+// TODO: Add logging to some file
 fn editor_read_key() -> u8 {
     let mut buffer = [0; 1];
     let read = io::stdin().read(&mut buffer);
     read.unwrap();
+
+    // Check if the key is an escape sequence
+    if buffer[0] == b'\x1b' {
+        let mut buffer = [0; 2];
+        let read = io::stdin().read(&mut buffer);
+        read.unwrap();
+
+        // Check if the key is an arrow key
+        if buffer[0] == b'[' {
+            return match buffer[1] {
+                b'A' => b'k',
+                b'B' => b'j',
+                b'C' => b'l',
+                b'D' => b'h',
+                _ => 0,
+            };
+        }
+    }
 
     buffer[0]
 }
