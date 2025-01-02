@@ -4,8 +4,10 @@ use std::{
     usize,
 };
 
+// TODO: How can we react to window size changes?
 fn get_window_size() -> (usize, usize) {
     term_size::dimensions_stdout().unwrap()
+    // TODO: Add a fallback for when term_size is not available
 }
 
 fn write_flush(s: &str) {
@@ -26,7 +28,7 @@ impl Screen {
         let size = get_window_size();
         let cursor = (0, 0);
         let abuf = vec![];
-        // Need to figure out where this lives
+        // TODO: Need to figure out where this lives
         let num_rows = 1;
 
         return Ok(Screen {
@@ -37,18 +39,31 @@ impl Screen {
         });
     }
 
+    fn get_height(&self) -> usize {
+        self.size.1
+    }
+
+    fn get_width(&self) -> usize {
+        self.size.0
+    }
+
     fn append_abuf(&mut self, s: &str) {
         self.abuf.extend(&s.as_bytes().to_vec());
     }
 
     pub fn editor_refresh_screen(&mut self) {
+        // Hide the cursor to avoid flickering
         self.append_abuf("\x1b[?25l");
+
         // Clears the entire screen
         // self.append_abuf("\x1b[2J");
+
         // Moves the cursor to the top left corner
+        // We need to do this to start drawing from the top left corner
         self.append_abuf("\x1b[H");
 
-        // self.append_abuf(&format!("{}, {}", self.screen.0, self.screen.1));
+        // Show the window size
+        // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
         self.draw_rows();
 
         self.append_abuf(&format!(
@@ -57,6 +72,7 @@ impl Screen {
             self.cursor.0 + 1
         ));
 
+        // Show the cursor again
         self.append_abuf("\x1b[?25h");
 
         write_flush(str::from_utf8(&self.abuf).unwrap());
@@ -70,7 +86,7 @@ impl Screen {
                 }
             }
             b'l' => {
-                if self.cursor.0 < (self.size.0 - 1) {
+                if self.cursor.0 < (self.get_width() - 1) {
                     self.cursor.0 += 1
                 }
             }
@@ -80,7 +96,7 @@ impl Screen {
                 }
             }
             b'j' => {
-                if self.cursor.1 < (self.size.1 - 1) {
+                if self.cursor.1 < (self.get_height() - 1) {
                     self.cursor.1 += 1
                 }
             }
@@ -89,7 +105,7 @@ impl Screen {
     }
 
     fn draw_rows(&mut self) {
-        for y in 0..self.size.1 {
+        for y in 0..self.get_height() {
             if y >= self.num_rows {
                 self.append_abuf("~");
             } else {
@@ -99,7 +115,7 @@ impl Screen {
             }
 
             self.append_abuf("\x1b[K");
-            if y < self.size.1 - 1 {
+            if y < self.get_height() - 1 {
                 self.append_abuf("\r\n");
             }
         }
