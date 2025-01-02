@@ -1,4 +1,4 @@
-use crate::{screen::Screen, stdin_raw_mode::StdinRawMode};
+use crate::{logger::Logger, screen::Screen, stdin_raw_mode::StdinRawMode};
 use std::{
     io::{self, Error, Read},
     usize,
@@ -20,6 +20,8 @@ pub struct Editor {
     screen: Screen,
     _stdin: StdinRawMode,
 
+    logger: Logger,
+
     num_rows: usize,
     row: Erow,
 }
@@ -32,6 +34,7 @@ impl Editor {
         Ok(Editor {
             screen,
             _stdin,
+            logger: Logger::new(),
             num_rows: 0,
             row: Erow {
                 size: 0,
@@ -61,6 +64,7 @@ impl Editor {
 
     pub fn editor_process_keypress(&mut self) -> Result<(), ()> {
         let c = editor_read_key();
+        self.logger.log(&[c, b'\n']);
 
         match c {
             c if c == ctrl_key('q') => Err(()),
@@ -82,13 +86,13 @@ fn editor_read_key() -> u8 {
 
     // Check if the key is an escape sequence
     if buffer[0] == b'\x1b' {
-        let mut buffer = [0; 2];
-        let read = io::stdin().read(&mut buffer);
+        let mut escape_buffer = [0; 2];
+        let read = io::stdin().read(&mut escape_buffer);
         read.unwrap();
 
         // Check if the key is an arrow key
-        if buffer[0] == b'[' {
-            return match buffer[1] {
+        if escape_buffer[0] == b'[' {
+            return match escape_buffer[1] {
                 b'A' => b'k',
                 b'B' => b'j',
                 b'C' => b'l',
