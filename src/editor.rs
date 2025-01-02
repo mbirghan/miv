@@ -1,7 +1,6 @@
 use crate::{screen::Screen, stdin_raw_mode::StdinRawMode};
-use core::str;
 use std::{
-    io::{self, Error, Read, Write},
+    io::{self, Error, Read},
     usize,
 };
 
@@ -53,6 +52,7 @@ impl Editor {
 
         loop {
             self.screen.editor_refresh_screen();
+            // TODO: We should not use an error to signal a quit
             if self.editor_process_keypress().is_err() {
                 break;
             }
