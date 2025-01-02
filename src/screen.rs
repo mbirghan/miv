@@ -1,3 +1,4 @@
+use crate::content::Content;
 use core::str;
 use std::{
     io::{self, Error, Write},
@@ -20,7 +21,8 @@ pub struct Screen {
     cursor: (usize, usize),
 
     abuf: Vec<u8>,
-    num_rows: usize,
+    // TODO: This should be an Option<Content>
+    content: Content,
 }
 
 impl Screen {
@@ -28,14 +30,12 @@ impl Screen {
         let size = get_window_size();
         let cursor = (0, 0);
         let abuf = vec![];
-        // TODO: Need to figure out where this lives
-        let num_rows = 1;
 
         return Ok(Screen {
             size,
             cursor,
             abuf,
-            num_rows,
+            content: Content::new(),
         });
     }
 
@@ -106,14 +106,15 @@ impl Screen {
 
     fn draw_rows(&mut self) {
         for y in 0..self.get_height() {
-            if y >= self.num_rows {
+            if y >= self.content.num_rows {
                 self.append_abuf("~");
             } else {
-                // self.abuf.extend(&self.row.content);
-                // TODO: How do we get the content on the screen
-                self.abuf.extend("Hello World!".as_bytes().to_vec());
+                // TODO: This is a hack to get the line to render
+                let line = self.content.lines[y].clone();
+                self.abuf.extend(line.as_bytes().to_vec());
             }
 
+            // Clears the line we are rerendering
             self.append_abuf("\x1b[K");
             if y < self.get_height() - 1 {
                 self.append_abuf("\r\n");
