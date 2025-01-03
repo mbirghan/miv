@@ -1,3 +1,4 @@
+use crate::constants::BLOCKING;
 use std::io::{self, Error};
 use std::os::fd::AsRawFd;
 use termios::*;
@@ -23,8 +24,17 @@ impl StdinRawMode {
         raw.c_cflag |= CS8;
         raw.c_lflag &= !(ECHO | ICANON | ISIG | IEXTEN);
 
-        raw.c_cc[VMIN] = 1;
-        raw.c_cc[VTIME] = 0;
+        if BLOCKING {
+            // Blocking read
+            // downside: pressing esc will not be read until a key is pressed as it could be part of an escape sequence
+            raw.c_cc[VMIN] = 1;
+            raw.c_cc[VTIME] = 0;
+        } else {
+            // Non-blocking read
+            // downside: we will consistently read 0 bytes until a key is pressed which could lead to consistent rerendering
+            raw.c_cc[VMIN] = 0;
+            raw.c_cc[VTIME] = 1;
+        }
 
         tcsetattr(io::stdin().as_raw_fd(), TCSAFLUSH, &raw).unwrap();
     }

@@ -50,31 +50,44 @@ impl Editor {
         self.row.content.push(b'\0');
         self.num_rows = 1;
 
+        // Refresh screen to show the initial content
+        self.screen.editor_refresh_screen();
+
         loop {
-            self.screen.editor_refresh_screen();
             // TODO: We should not use an error to signal a quit
-            if self.editor_process_keypress().is_err() {
-                break;
+            let result = self.editor_process_keypress();
+            match result {
+                Ok(0) => {
+                    // 0 means we did not read a key
+                    // We should not refresh the screen as we did not read a key
+                }
+                Ok(_) => {
+                    // We read a key and should refresh the screen
+                    self.screen.editor_refresh_screen();
+                }
+                Err(()) => break,
             }
+
+            // Refresh screen to show the updated content
         }
     }
 
-    pub fn editor_process_keypress(&mut self) -> Result<(), ()> {
+    pub fn editor_process_keypress(&mut self) -> Result<u8, ()> {
         let c = editor_read_key();
-        log!("Key pressed: {}", c);
 
         match c {
             c if c == ctrl_key('q') => Err(()),
             c if c == ctrl_key('c') => Err(()),
             b'h' | b'j' | b'k' | b'l' => {
                 self.screen.move_cursor(c);
-                Ok(())
+                Ok(c)
             }
-            _ => Ok(()),
+            _ => Ok(c),
         }
     }
 }
 
+// TODO: Should move this to a separate module
 fn editor_read_key() -> u8 {
     let mut buffer = [0; 1];
     let read = io::stdin().read(&mut buffer);
@@ -82,13 +95,22 @@ fn editor_read_key() -> u8 {
 
     // Check if the key is an escape sequence
     if buffer[0] == b'\x1b' {
-        let mut escape_buffer = [0; 2];
+        let mut escape_buffer = [0; 1];
         let read = io::stdin().read(&mut escape_buffer);
         read.unwrap();
 
+        // If we do not detect a second byte the key is just esc
+        if escape_buffer[0] == 0 {
+            return b'\x1b';
+        }
+
         // Check if the key is an arrow key
         if escape_buffer[0] == b'[' {
-            return match escape_buffer[1] {
+            let mut move_buffer = [0; 1];
+            let read = io::stdin().read(&mut move_buffer);
+            read.unwrap();
+
+            return match move_buffer[0] {
                 b'A' => b'k',
                 b'B' => b'j',
                 b'C' => b'l',

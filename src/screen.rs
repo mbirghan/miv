@@ -22,6 +22,7 @@ pub struct Screen {
     cursor: (usize, usize),
 
     abuf: Vec<u8>,
+    // TODO: Move this to the editor struct
     content: Option<Content>,
 }
 
