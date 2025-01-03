@@ -1,4 +1,4 @@
-use crate::{logger::Logger, screen::Screen, stdin_raw_mode::StdinRawMode};
+use crate::{log, screen::Screen, stdin_raw_mode::StdinRawMode};
 use std::{
     io::{self, Error, Read},
     usize,
@@ -20,8 +20,6 @@ pub struct Editor {
     screen: Screen,
     _stdin: StdinRawMode,
 
-    logger: Logger,
-
     num_rows: usize,
     row: Erow,
 }
@@ -34,7 +32,6 @@ impl Editor {
         Ok(Editor {
             screen,
             _stdin,
-            logger: Logger::new(),
             num_rows: 0,
             row: Erow {
                 size: 0,
@@ -64,7 +61,7 @@ impl Editor {
 
     pub fn editor_process_keypress(&mut self) -> Result<(), ()> {
         let c = editor_read_key();
-        self.logger.log(c.to_string().as_str());
+        log!("Key pressed: {}", c);
 
         match c {
             c if c == ctrl_key('q') => Err(()),
