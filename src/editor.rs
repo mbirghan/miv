@@ -75,7 +75,6 @@ impl Editor {
     }
 }
 
-// TODO: Add logging to some file
 fn editor_read_key() -> u8 {
     let mut buffer = [0; 1];
     let read = io::stdin().read(&mut buffer);
