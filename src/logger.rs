@@ -3,6 +3,19 @@ use std::{
     io::Write,
     sync::{Arc, Mutex},
 };
+
+use crate::constants::LOG_LEVEL;
+
+#[derive(PartialEq, PartialOrd)]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Fatal,
+}
+
 pub struct Logger {
     log_file: File,
 }
@@ -17,8 +30,7 @@ impl Logger {
                 .unwrap(),
         };
 
-        logger.log("Logger initialized");
-
+        logger.log(LogLevel::Info, "Logger initialized");
         logger
     }
 
@@ -27,14 +39,19 @@ impl Logger {
         timestamp.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
-    pub fn log(&mut self, message: &str) {
-        let log_message = format!("[{}]: {}\n", self.get_timestamp(), message);
-        self.log_file.write_all(log_message.as_bytes()).unwrap();
-    }
-
-    pub fn error(&mut self, message: &str) {
-        let log_message = format!("[{}]: {}", self.get_timestamp(), message);
-        self.log_file.write_all(log_message.as_bytes()).unwrap();
+    pub fn log(&mut self, level: LogLevel, message: &str) {
+        if level >= LOG_LEVEL {
+            let level_str = match level {
+                LogLevel::Trace => "TRACE",
+                LogLevel::Debug => "DEBUG",
+                LogLevel::Info => "INFO",
+                LogLevel::Warn => "WARN",
+                LogLevel::Error => "ERROR",
+                LogLevel::Fatal => "FATAL",
+            };
+            let log_message = format!("[{}] [{}]: {}\n", self.get_timestamp(), level_str, message);
+            self.log_file.write_all(log_message.as_bytes()).unwrap();
+        }
     }
 
     pub fn global() -> Arc<Mutex<Logger>> {
@@ -56,7 +73,39 @@ impl Drop for Logger {
 macro_rules! log {
     ($($arg:tt)*) => {{
         let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log(&format!($($arg)*));
+        logger.lock().unwrap().log($crate::logger::LogLevel::Info, &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! trace {
+    ($($arg:tt)*) => {{
+        let logger = $crate::logger::Logger::global();
+        logger.lock().unwrap().log($crate::logger::LogLevel::Trace, &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! debug {
+    ($($arg:tt)*) => {{
+        let logger = $crate::logger::Logger::global();
+        logger.lock().unwrap().log($crate::logger::LogLevel::Debug, &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {{
+        let logger = $crate::logger::Logger::global();
+        logger.lock().unwrap().log($crate::logger::LogLevel::Info, &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! warn {
+    ($($arg:tt)*) => {{
+        let logger = $crate::logger::Logger::global();
+        logger.lock().unwrap().log($crate::logger::LogLevel::Warn, &format!($($arg)*));
     }};
 }
 
@@ -64,6 +113,14 @@ macro_rules! log {
 macro_rules! error {
     ($($arg:tt)*) => {{
         let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().error(&format!($($arg)*));
+        logger.lock().unwrap().log($crate::logger::LogLevel::Error, &format!($($arg)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! fatal {
+    ($($arg:tt)*) => {{
+        let logger = $crate::logger::Logger::global();
+        logger.lock().unwrap().log($crate::logger::LogLevel::Fatal, &format!($($arg)*));
     }};
 }
