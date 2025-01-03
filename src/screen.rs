@@ -1,5 +1,5 @@
-use crate::constants::VERSION;
 use crate::content::Content;
+use crate::{constants::VERSION, trace};
 use core::str;
 use std::{
     io::{self, Error, Write},
@@ -53,6 +53,8 @@ impl Screen {
     }
 
     pub fn editor_refresh_screen(&mut self) {
+        trace!("Refreshing screen");
+
         // Hide the cursor to avoid flickering
         self.append_abuf("\x1b[?25l");
 

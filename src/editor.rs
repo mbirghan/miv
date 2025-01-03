@@ -1,4 +1,4 @@
-use crate::{log, screen::Screen, stdin_raw_mode::StdinRawMode};
+use crate::{log, screen::Screen, stdin_raw_mode::StdinRawMode, trace};
 use std::{
     io::{self, Error, Read},
     usize,
@@ -26,6 +26,8 @@ pub struct Editor {
 
 impl Editor {
     pub fn new() -> Result<Editor, Error> {
+        log!("Initializing editor");
+
         let _stdin = StdinRawMode::new().unwrap();
         let screen = Screen::new().unwrap();
 
@@ -92,12 +94,14 @@ fn editor_read_key() -> u8 {
     let mut buffer = [0; 1];
     let read = io::stdin().read(&mut buffer);
     read.unwrap();
+    trace!("Read key: {}", buffer[0]);
 
     // Check if the key is an escape sequence
     if buffer[0] == b'\x1b' {
         let mut escape_buffer = [0; 1];
         let read = io::stdin().read(&mut escape_buffer);
         read.unwrap();
+        trace!("Read escape: {}", escape_buffer[0]);
 
         // If we do not detect a second byte the key is just esc
         if escape_buffer[0] == 0 {
@@ -109,6 +113,7 @@ fn editor_read_key() -> u8 {
             let mut move_buffer = [0; 1];
             let read = io::stdin().read(&mut move_buffer);
             read.unwrap();
+            trace!("Read move: {}", move_buffer[0]);
 
             return match move_buffer[0] {
                 b'A' => b'k',

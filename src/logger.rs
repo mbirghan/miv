@@ -72,55 +72,55 @@ impl Drop for Logger {
 #[macro_export]
 macro_rules! log {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Info, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Info, &format!($($arg)*));
     }};
 }
 
 #[macro_export]
 macro_rules! trace {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Trace, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Trace, &format!($($arg)*));
     }};
 }
 
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Debug, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Debug, &format!($($arg)*));
     }};
 }
 
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Info, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Info, &format!($($arg)*));
     }};
 }
 
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Warn, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Warn, &format!($($arg)*));
     }};
 }
 
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Error, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Error, &format!($($arg)*));
     }};
 }
 
 #[macro_export]
 macro_rules! fatal {
     ($($arg:tt)*) => {{
-        let logger = $crate::logger::Logger::global();
-        logger.lock().unwrap().log($crate::logger::LogLevel::Fatal, &format!($($arg)*));
+        let logger = $crate::Logger::global();
+        logger.lock().unwrap().log($crate::LogLevel::Fatal, &format!($($arg)*));
     }};
 }
