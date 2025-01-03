@@ -64,7 +64,7 @@ impl Editor {
 
     pub fn editor_process_keypress(&mut self) -> Result<(), ()> {
         let c = editor_read_key();
-        self.logger.log(&[c, b'\n']);
+        self.logger.log(c.to_string().as_str());
 
         match c {
             c if c == ctrl_key('q') => Err(()),
