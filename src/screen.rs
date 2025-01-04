@@ -52,7 +52,7 @@ impl Screen {
         self.abuf.extend(&s.as_bytes().to_vec());
     }
 
-    pub fn editor_refresh_screen(&mut self) {
+    pub fn editor_refresh_screen(&mut self, content: Content) {
         trace!("Refreshing screen");
 
         // Hide the cursor to avoid flickering
@@ -67,7 +67,7 @@ impl Screen {
 
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_content();
+        self.draw_content(content);
 
         self.append_abuf(&format!(
             "\x1b[{};{}H",
@@ -107,24 +107,19 @@ impl Screen {
         }
     }
 
-    fn draw_content(&mut self) {
+    fn draw_content(&mut self, content: Content) {
         // Extract content reference before the mutable borrows
-        let content_len = self.content.as_ref().map(|c| c.lines.len()).unwrap_or(0);
-        match &self.content {
-            Some(_) => {
-                self.draw_content_rows().unwrap();
+        let content_len = content.lines.len();
+        match content_len {
+            0 => self.draw_welcome_message(),
+            _ => {
+                self.draw_content_rows(content).unwrap();
                 self.draw_filler_rows(content_len);
             }
-            None => self.draw_welcome_message(),
         }
     }
-    fn draw_content_rows(&mut self) -> Result<(), Error> {
-        let lines = self
-            .content
-            .as_ref()
-            .unwrap_or(&Content::new())
-            .lines
-            .clone();
+    fn draw_content_rows(&mut self, content: Content) -> Result<(), Error> {
+        let lines = content.lines.clone();
 
         // Only iterate up to the minimum of screen height and content length
         let visible_lines = lines.len().min(self.get_height());

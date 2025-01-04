@@ -1,16 +1,12 @@
+use crate::content::Content;
 use crate::{log, screen::Screen, stdin_raw_mode::StdinRawMode, trace};
 use std::{
-    io::{self, Error, Read},
-    usize,
+    fs::File,
+    io::{self, BufRead, Error, Read},
 };
 
 const fn ctrl_key(k: char) -> u8 {
     (k as u8) & 0x1f
-}
-
-struct Erow {
-    size: usize,
-    content: Vec<u8>,
 }
 
 pub struct Editor {
@@ -20,8 +16,9 @@ pub struct Editor {
     screen: Screen,
     _stdin: StdinRawMode,
 
-    num_rows: usize,
-    row: Erow,
+    // TODO: This should live somewhere else
+    content: Content,
+    filename: String,
 }
 
 impl Editor {
@@ -34,26 +31,16 @@ impl Editor {
         Ok(Editor {
             screen,
             _stdin,
-            num_rows: 0,
-            row: Erow {
-                size: 0,
-                content: vec![],
-            },
+            content: Content::new(),
+            filename: "logs/test-file.txt".to_string(),
         })
     }
 
     pub fn editor_open(&mut self) {
-        let line: Vec<u8> = "Hello, world!".as_bytes().to_vec();
-        let line_len: usize = line.len();
-
-        self.row.size = line_len;
-        self.row.content = line;
-
-        self.row.content.push(b'\0');
-        self.num_rows = 1;
+        self.editor_open_file();
 
         // Refresh screen to show the initial content
-        self.screen.editor_refresh_screen();
+        self.screen.editor_refresh_screen(self.content.clone());
 
         loop {
             // TODO: We should not use an error to signal a quit
@@ -65,7 +52,7 @@ impl Editor {
                 }
                 Ok(_) => {
                     // We read a key and should refresh the screen
-                    self.screen.editor_refresh_screen();
+                    self.screen.editor_refresh_screen(self.content.clone());
                 }
                 Err(()) => break,
             }
@@ -85,6 +72,19 @@ impl Editor {
                 Ok(c)
             }
             _ => Ok(c),
+        }
+    }
+
+    pub fn editor_open_file(&mut self) {
+        self.content.lines.clear();
+
+        let file = File::open(self.filename.clone()).unwrap();
+        let reader = io::BufReader::new(file);
+        let lines = reader.lines();
+
+        for line in lines {
+            let line = line.unwrap();
+            self.content.lines.push(line);
         }
     }
 }

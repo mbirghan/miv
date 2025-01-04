@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Content {
     pub lines: Vec<String>,
 }
