@@ -36,9 +36,16 @@ impl Editor {
         })
     }
 
-    pub fn editor_open(&mut self) {
+    pub fn editor_open_with_file(&mut self, filename: String) {
+        log!("Opening editor with file: {}", filename);
+
+        self.filename = filename;
         self.editor_open_file();
 
+        self.editor_open();
+    }
+
+    pub fn editor_open(&mut self) {
         // Refresh screen to show the initial content
         self.screen.editor_refresh_screen(self.content.clone());
 

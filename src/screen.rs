@@ -22,8 +22,6 @@ pub struct Screen {
     cursor: (usize, usize),
 
     abuf: Vec<u8>,
-    // TODO: Move this to the editor struct
-    content: Option<Content>,
 }
 
 impl Screen {
@@ -32,12 +30,7 @@ impl Screen {
         let cursor = (0, 0);
         let abuf = vec![];
 
-        return Ok(Screen {
-            size,
-            cursor,
-            abuf,
-            content: None,
-        });
+        return Ok(Screen { size, cursor, abuf });
     }
 
     fn get_height(&self) -> usize {
