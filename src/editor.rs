@@ -1,5 +1,6 @@
 use crate::content::Content;
 use crate::input::{Input, Key};
+use crate::trace;
 use crate::{log, screen::Screen};
 use std::{
     fs::File,
@@ -23,6 +24,7 @@ pub struct Editor {
     filename: String,
 
     cursor: (usize, usize),
+    row_offset: usize,
 }
 
 impl Editor {
@@ -38,6 +40,7 @@ impl Editor {
             content: Content::new(),
             filename: "logs/test-file.txt".to_string(),
             cursor: (0, 0),
+            row_offset: 0,
         })
     }
 
@@ -53,7 +56,7 @@ impl Editor {
     pub fn editor_open(&mut self) {
         // Refresh screen to show the initial content
         self.screen
-            .editor_refresh_screen(self.content.clone(), self.cursor);
+            .editor_refresh_screen(self.content.clone(), self.cursor, self.row_offset);
 
         loop {
             // TODO: This should probably be moved to a function
@@ -68,8 +71,11 @@ impl Editor {
                 _ => {
                     // We read a movement key and should refresh the screen
                     self.move_cursor(key);
-                    self.screen
-                        .editor_refresh_screen(self.content.clone(), self.cursor);
+                    self.screen.editor_refresh_screen(
+                        self.content.clone(),
+                        self.cursor,
+                        self.row_offset,
+                    );
                 }
             }
 
@@ -80,8 +86,12 @@ impl Editor {
     fn move_cursor(&mut self, key: Key) {
         match key {
             Key::ArrowUp | Key::Other(b'k') => {
-                if self.cursor.1 > 0 {
-                    self.cursor.1 -= 1
+                if self.cursor.1 + self.row_offset > 0 {
+                    if self.cursor.1 > 0 {
+                        self.cursor.1 -= 1;
+                    } else {
+                        self.row_offset -= 1;
+                    }
                 }
             }
             Key::ArrowRight | Key::Other(b'l') => {
@@ -95,12 +105,20 @@ impl Editor {
                 }
             }
             Key::ArrowDown | Key::Other(b'j') => {
-                if self.cursor.1 < (self.screen.get_height() - 1) {
-                    self.cursor.1 += 1
+                if self.cursor.1 + self.row_offset
+                    < (self.screen.get_height().max(self.content.lines.len()) - 1)
+                {
+                    if self.cursor.1 < self.screen.get_height() - 1 {
+                        self.cursor.1 += 1;
+                    } else {
+                        self.row_offset += 1;
+                    }
                 }
             }
             _ => {}
         }
+        trace!("Cursor: {:?}", self.cursor);
+        trace!("Row offset: {}", self.row_offset);
     }
 
     pub fn editor_open_file(&mut self) {

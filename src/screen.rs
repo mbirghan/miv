@@ -43,7 +43,12 @@ impl Screen {
         self.abuf.extend(&s.as_bytes().to_vec());
     }
 
-    pub fn editor_refresh_screen(&mut self, content: Content, cursor: (usize, usize)) {
+    pub fn editor_refresh_screen(
+        &mut self,
+        content: Content,
+        cursor: (usize, usize),
+        row_offset: usize,
+    ) {
         trace!("Refreshing screen");
 
         // Hide the cursor to avoid flickering
@@ -58,7 +63,7 @@ impl Screen {
 
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_content(content);
+        self.draw_content(content, row_offset);
 
         self.append_abuf(&format!("\x1b[{};{}H", cursor.1 + 1, cursor.0 + 1));
 
@@ -68,25 +73,25 @@ impl Screen {
         write_flush(str::from_utf8(&self.abuf).unwrap());
     }
 
-    fn draw_content(&mut self, content: Content) {
+    fn draw_content(&mut self, content: Content, row_offset: usize) {
         // Extract content reference before the mutable borrows
         let content_len = content.lines.len();
         match content_len {
             0 => self.draw_welcome_message(),
             _ => {
-                self.draw_content_rows(content).unwrap();
+                self.draw_content_rows(content, row_offset).unwrap();
                 self.draw_filler_rows(content_len);
             }
         }
     }
-    fn draw_content_rows(&mut self, content: Content) -> Result<(), Error> {
+    fn draw_content_rows(&mut self, content: Content, row_offset: usize) -> Result<(), Error> {
         let lines = content.lines.clone();
 
         // Only iterate up to the minimum of screen height and content length
         let visible_lines = lines.len().min(self.get_height());
 
         for y in 0..visible_lines {
-            let line = &lines[y]; // Use reference instead of clone
+            let line = &lines[y + row_offset]; // Use reference instead of clone
             self.append_abuf(line); // No need for to_vec()
 
             // Clears the line we are rerendering
