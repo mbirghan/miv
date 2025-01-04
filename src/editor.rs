@@ -1,9 +1,16 @@
 use crate::content::Content;
-use crate::{log, screen::Screen, stdin_raw_mode::StdinRawMode, trace};
+use crate::{error, log, screen::Screen, stdin_raw_mode::StdinRawMode, trace};
 use std::{
     fs::File,
     io::{self, BufRead, Error, Read},
 };
+
+pub enum Key {
+    CtrlQ,
+    CtrlC,
+    None,
+    Other(u8),
+}
 
 const fn ctrl_key(k: char) -> u8 {
     (k as u8) & 0x1f
@@ -50,35 +57,39 @@ impl Editor {
         self.screen.editor_refresh_screen(self.content.clone());
 
         loop {
-            // TODO: We should not use an error to signal a quit
             let result = self.editor_process_keypress();
             match result {
-                Ok(0) => {
+                Ok(Key::None) => {
                     // 0 means we did not read a key
                     // We should not refresh the screen as we did not read a key
                 }
-                Ok(_) => {
+                Ok(Key::CtrlQ) | Ok(Key::CtrlC) => break,
+                Ok(Key::Other(_)) => {
                     // We read a key and should refresh the screen
                     self.screen.editor_refresh_screen(self.content.clone());
                 }
-                Err(()) => break,
+                Err(()) => {
+                    error!("Error processing keypress");
+                    break;
+                }
             }
 
             // Refresh screen to show the updated content
         }
     }
 
-    pub fn editor_process_keypress(&mut self) -> Result<u8, ()> {
+    pub fn editor_process_keypress(&mut self) -> Result<Key, ()> {
         let c = editor_read_key();
 
         match c {
-            c if c == ctrl_key('q') => Err(()),
-            c if c == ctrl_key('c') => Err(()),
+            0 => Ok(Key::None),
+            c if c == ctrl_key('q') => Ok(Key::CtrlQ),
+            c if c == ctrl_key('c') => Ok(Key::CtrlC),
             b'h' | b'j' | b'k' | b'l' => {
                 self.screen.move_cursor(c);
-                Ok(c)
+                Ok(Key::Other(c))
             }
-            _ => Ok(c),
+            c => Ok(Key::Other(c)),
         }
     }
 
@@ -97,6 +108,7 @@ impl Editor {
 }
 
 // TODO: Should move this to a separate module
+// TODO: Should return a Key enum
 fn editor_read_key() -> u8 {
     let mut buffer = [0; 1];
     let read = io::stdin().read(&mut buffer);
