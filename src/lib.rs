@@ -1,6 +1,7 @@
 mod constants;
 mod content;
 mod editor;
+mod input;
 mod logger;
 mod screen;
 mod stdin_raw_mode;

@@ -1,4 +1,5 @@
 use crate::content::Content;
+use crate::input::Key;
 use crate::{constants::VERSION, trace};
 use core::str;
 use std::{
@@ -74,24 +75,25 @@ impl Screen {
         write_flush(str::from_utf8(&self.abuf).unwrap());
     }
 
-    pub fn move_cursor(&mut self, key: u8) {
+    // TODO: Move this to controller module
+    pub fn move_cursor(&mut self, key: Key) {
         match key {
-            b'k' => {
+            Key::ArrowUp | Key::Other(b'k') => {
                 if self.cursor.1 > 0 {
                     self.cursor.1 -= 1
                 }
             }
-            b'l' => {
+            Key::ArrowRight | Key::Other(b'l') => {
                 if self.cursor.0 < (self.get_width() - 1) {
                     self.cursor.0 += 1
                 }
             }
-            b'h' => {
+            Key::ArrowLeft | Key::Other(b'h') => {
                 if self.cursor.0 > 0 {
                     self.cursor.0 -= 1
                 }
             }
-            b'j' => {
+            Key::ArrowDown | Key::Other(b'j') => {
                 if self.cursor.1 < (self.get_height() - 1) {
                     self.cursor.1 += 1
                 }
