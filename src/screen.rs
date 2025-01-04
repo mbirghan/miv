@@ -1,5 +1,4 @@
 use crate::content::Content;
-use crate::input::Key;
 use crate::{constants::VERSION, trace};
 use core::str;
 use std::{
@@ -20,7 +19,6 @@ fn write_flush(s: &str) {
 
 pub struct Screen {
     size: (usize, usize),
-    cursor: (usize, usize),
 
     abuf: Vec<u8>,
 }
@@ -28,17 +26,16 @@ pub struct Screen {
 impl Screen {
     pub fn new() -> Result<Screen, Error> {
         let size = get_window_size();
-        let cursor = (0, 0);
         let abuf = vec![];
 
-        return Ok(Screen { size, cursor, abuf });
+        return Ok(Screen { size, abuf });
     }
 
-    fn get_height(&self) -> usize {
+    pub fn get_height(&self) -> usize {
         self.size.1
     }
 
-    fn get_width(&self) -> usize {
+    pub fn get_width(&self) -> usize {
         self.size.0
     }
 
@@ -46,7 +43,7 @@ impl Screen {
         self.abuf.extend(&s.as_bytes().to_vec());
     }
 
-    pub fn editor_refresh_screen(&mut self, content: Content) {
+    pub fn editor_refresh_screen(&mut self, content: Content, cursor: (usize, usize)) {
         trace!("Refreshing screen");
 
         // Hide the cursor to avoid flickering
@@ -63,43 +60,12 @@ impl Screen {
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
         self.draw_content(content);
 
-        self.append_abuf(&format!(
-            "\x1b[{};{}H",
-            self.cursor.1 + 1,
-            self.cursor.0 + 1
-        ));
+        self.append_abuf(&format!("\x1b[{};{}H", cursor.1 + 1, cursor.0 + 1));
 
         // Show the cursor again
         self.append_abuf("\x1b[?25h");
 
         write_flush(str::from_utf8(&self.abuf).unwrap());
-    }
-
-    // TODO: Move this to controller module
-    pub fn move_cursor(&mut self, key: Key) {
-        match key {
-            Key::ArrowUp | Key::Other(b'k') => {
-                if self.cursor.1 > 0 {
-                    self.cursor.1 -= 1
-                }
-            }
-            Key::ArrowRight | Key::Other(b'l') => {
-                if self.cursor.0 < (self.get_width() - 1) {
-                    self.cursor.0 += 1
-                }
-            }
-            Key::ArrowLeft | Key::Other(b'h') => {
-                if self.cursor.0 > 0 {
-                    self.cursor.0 -= 1
-                }
-            }
-            Key::ArrowDown | Key::Other(b'j') => {
-                if self.cursor.1 < (self.get_height() - 1) {
-                    self.cursor.1 += 1
-                }
-            }
-            _ => {}
-        }
     }
 
     fn draw_content(&mut self, content: Content) {

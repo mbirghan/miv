@@ -21,6 +21,8 @@ pub struct Editor {
     // TODO: This should live somewhere else
     content: Content,
     filename: String,
+
+    cursor: (usize, usize),
 }
 
 impl Editor {
@@ -35,6 +37,7 @@ impl Editor {
             input,
             content: Content::new(),
             filename: "logs/test-file.txt".to_string(),
+            cursor: (0, 0),
         })
     }
 
@@ -49,7 +52,8 @@ impl Editor {
 
     pub fn editor_open(&mut self) {
         // Refresh screen to show the initial content
-        self.screen.editor_refresh_screen(self.content.clone());
+        self.screen
+            .editor_refresh_screen(self.content.clone(), self.cursor);
 
         loop {
             // TODO: This should probably be moved to a function
@@ -61,25 +65,41 @@ impl Editor {
                 }
                 Key::Other(c) if c == ctrl_key('q') => break,
                 Key::Other(c) if c == ctrl_key('c') => break,
-                // TODO: This feels weird, it should be moved to the controller module
-                // Currently this is redundant as we already have a similar function in the screen module
-                Key::ArrowUp | Key::Other(b'k') // Up
-                | Key::ArrowDown | Key::Other(b'j') // Down
-                | Key::ArrowLeft | Key::Other(b'h') // Left
-                | Key::ArrowRight | Key::Other(b'l') // Right
-                => {
+                _ => {
                     // We read a movement key and should refresh the screen
-                    self.screen.move_cursor(key);
-                    self.screen.editor_refresh_screen(self.content.clone());
-                }
-                Key::Esc | Key::Other(_) => {
-                    // We read a key and should refresh the screen
-                    // self.screen.editor_refresh_screen(self.content.clone());
-                    // TODO: Right now we do not need to refresh the screen as we do not change the content
+                    self.move_cursor(key);
+                    self.screen
+                        .editor_refresh_screen(self.content.clone(), self.cursor);
                 }
             }
 
             // Refresh screen to show the updated content
+        }
+    }
+
+    fn move_cursor(&mut self, key: Key) {
+        match key {
+            Key::ArrowUp | Key::Other(b'k') => {
+                if self.cursor.1 > 0 {
+                    self.cursor.1 -= 1
+                }
+            }
+            Key::ArrowRight | Key::Other(b'l') => {
+                if self.cursor.0 < (self.screen.get_width() - 1) {
+                    self.cursor.0 += 1
+                }
+            }
+            Key::ArrowLeft | Key::Other(b'h') => {
+                if self.cursor.0 > 0 {
+                    self.cursor.0 -= 1
+                }
+            }
+            Key::ArrowDown | Key::Other(b'j') => {
+                if self.cursor.1 < (self.screen.get_height() - 1) {
+                    self.cursor.1 += 1
+                }
+            }
+            _ => {}
         }
     }
 
