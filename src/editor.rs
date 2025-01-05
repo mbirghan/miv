@@ -148,6 +148,13 @@ impl Editor {
             if self.cursor_column < self.column_offset {
                 self.column_offset -= 1;
             }
+        } else {
+            if self.cursor_row > 0 {
+                self.move_cursor_up();
+                self.cursor_column =
+                    self.content.lines[self.cursor_row + self.row_offset].len() - 1;
+                self.column_offset = self.cursor_column - self.screen.get_width() + 1;
+            }
         }
     }
 
@@ -159,6 +166,12 @@ impl Editor {
 
             if self.cursor_column > self.column_offset + self.screen.get_width() - 1 {
                 self.column_offset += 1;
+            }
+        } else {
+            if self.cursor_row < self.content.lines.len() - 1 {
+                self.move_cursor_down();
+                self.cursor_column = 0;
+                self.column_offset = 0;
             }
         }
     }
