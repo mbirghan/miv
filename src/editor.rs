@@ -23,6 +23,7 @@ pub struct Editor {
     content: Content,
     filename: String,
 
+    // NOTE: These are usize and therefore cannot be negative, even in calculations
     cursor_row: usize,
     cursor_column: usize,
 
@@ -153,7 +154,13 @@ impl Editor {
                 self.move_cursor_up();
                 self.cursor_column =
                     self.content.lines[self.cursor_row + self.row_offset].len() - 1;
-                self.column_offset = self.cursor_column - self.screen.get_width() + 1;
+
+                // TODO: Make this nicer
+                if self.cursor_column >= self.screen.get_width() {
+                    self.column_offset = self.cursor_column - self.screen.get_width() + 1;
+                } else {
+                    self.column_offset = 0;
+                }
             }
         }
     }
