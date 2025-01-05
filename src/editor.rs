@@ -114,6 +114,8 @@ impl Editor {
             Key::ArrowDown | Key::Other(b'j') => self.move_cursor_down(),
             Key::ArrowRight | Key::Other(b'l') => self.move_cursor_right(),
             Key::ArrowLeft | Key::Other(b'h') => self.move_cursor_left(),
+            Key::Other(b'^') => self.move_cursor_to_start_of_line(),
+            Key::Other(b'$') => self.move_cursor_to_end_of_line(),
             _ => {}
         }
         trace!("Cursor: {}, {}", self.cursor_row, self.cursor_column);
@@ -152,15 +154,7 @@ impl Editor {
         } else {
             if self.cursor_row > 0 {
                 self.move_cursor_up();
-                self.cursor_column =
-                    self.content.lines[self.cursor_row + self.row_offset].len() - 1;
-
-                // TODO: Make this nicer
-                if self.cursor_column >= self.screen.get_width() {
-                    self.column_offset = self.cursor_column - self.screen.get_width() + 1;
-                } else {
-                    self.column_offset = 0;
-                }
+                self.move_cursor_to_end_of_line();
             }
         }
     }
@@ -177,9 +171,23 @@ impl Editor {
         } else {
             if self.cursor_row < self.content.lines.len() - 1 {
                 self.move_cursor_down();
-                self.cursor_column = 0;
-                self.column_offset = 0;
+                self.move_cursor_to_start_of_line();
             }
+        }
+    }
+
+    fn move_cursor_to_start_of_line(&mut self) {
+        self.cursor_column = 0;
+        self.column_offset = 0;
+    }
+
+    fn move_cursor_to_end_of_line(&mut self) {
+        self.cursor_column = self.content.lines[self.cursor_row + self.row_offset].len() - 1;
+
+        if self.cursor_column >= self.screen.get_width() {
+            self.column_offset = self.cursor_column - self.screen.get_width() + 1;
+        } else {
+            self.column_offset = 0;
         }
     }
 
