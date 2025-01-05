@@ -43,11 +43,13 @@ impl Screen {
         self.abuf.extend(&s.as_bytes().to_vec());
     }
 
+    // TODO: I am passing way too many arguments here
     pub fn editor_refresh_screen(
         &mut self,
         content: Content,
         cursor: (usize, usize),
         row_offset: usize,
+        column_offset: usize,
     ) {
         trace!("Refreshing screen");
 
@@ -63,7 +65,7 @@ impl Screen {
 
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_content(content, row_offset);
+        self.draw_content(content, row_offset, column_offset);
 
         self.append_abuf(&format!("\x1b[{};{}H", cursor.1 + 1, cursor.0 + 1));
 
@@ -71,20 +73,27 @@ impl Screen {
         self.append_abuf("\x1b[?25h");
 
         write_flush(str::from_utf8(&self.abuf).unwrap());
+        trace!("Screen refreshed");
     }
 
-    fn draw_content(&mut self, content: Content, row_offset: usize) {
+    fn draw_content(&mut self, content: Content, row_offset: usize, column_offset: usize) {
         // Extract content reference before the mutable borrows
         let content_len = content.lines.len();
         match content_len {
             0 => self.draw_welcome_message(),
             _ => {
-                self.draw_content_rows(content, row_offset).unwrap();
+                self.draw_content_rows(content, row_offset, column_offset)
+                    .unwrap();
                 self.draw_filler_rows(content_len);
             }
         }
     }
-    fn draw_content_rows(&mut self, content: Content, row_offset: usize) -> Result<(), Error> {
+    fn draw_content_rows(
+        &mut self,
+        content: Content,
+        row_offset: usize,
+        column_offset: usize,
+    ) -> Result<(), Error> {
         let lines = content.lines.clone();
 
         // Only iterate up to the minimum of screen height and content length
@@ -92,7 +101,14 @@ impl Screen {
 
         for y in 0..visible_lines {
             let line = &lines[y + row_offset]; // Use reference instead of clone
-            self.append_abuf(line); // No need for to_vec()
+
+            // TODO: Clean this up
+            // TODO: Support moving up and down with the cursor when the cursor is at the end of the line
+            let line_start = column_offset;
+            let line_end = line.len().min(self.get_width() + column_offset);
+            if line_start < line_end {
+                self.append_abuf(&line[line_start..line_end]); // No need for to_vec()
+            }
 
             // Clears the line we are rerendering
             self.append_abuf("\x1b[K");

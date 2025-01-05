@@ -25,6 +25,7 @@ pub struct Editor {
 
     cursor: (usize, usize),
     row_offset: usize,
+    column_offset: usize,
 }
 
 impl Editor {
@@ -41,6 +42,7 @@ impl Editor {
             filename: "logs/test-file.txt".to_string(),
             cursor: (0, 0),
             row_offset: 0,
+            column_offset: 0,
         })
     }
 
@@ -55,8 +57,12 @@ impl Editor {
 
     pub fn editor_open(&mut self) {
         // Refresh screen to show the initial content
-        self.screen
-            .editor_refresh_screen(self.content.clone(), self.cursor, self.row_offset);
+        self.screen.editor_refresh_screen(
+            self.content.clone(),
+            self.cursor,
+            self.row_offset,
+            self.column_offset,
+        );
 
         loop {
             // TODO: This should probably be moved to a function
@@ -66,8 +72,14 @@ impl Editor {
                     // None means we did not read a key
                     // We should not refresh the screen as we did not read a key
                 }
-                Key::Other(c) if c == ctrl_key('q') => break,
-                Key::Other(c) if c == ctrl_key('c') => break,
+                Key::Other(c) if c == ctrl_key('q') => {
+                    log!("Ctrl Q, Exiting");
+                    break;
+                }
+                Key::Other(c) if c == ctrl_key('c') => {
+                    log!("Ctrl C, Exiting");
+                    break;
+                }
                 _ => {
                     // We read a movement key and should refresh the screen
                     self.move_cursor(key);
@@ -75,6 +87,7 @@ impl Editor {
                         self.content.clone(),
                         self.cursor,
                         self.row_offset,
+                        self.column_offset,
                     );
                 }
             }
@@ -95,13 +108,27 @@ impl Editor {
                 }
             }
             Key::ArrowRight | Key::Other(b'l') => {
-                if self.cursor.0 < (self.screen.get_width() - 1) {
-                    self.cursor.0 += 1
+                if self.cursor.0 + self.column_offset
+                    < (self
+                        .screen
+                        .get_width()
+                        .max(self.content.lines[self.cursor.1 + self.row_offset].len())
+                        - 1)
+                {
+                    if self.cursor.0 < self.screen.get_width() - 1 {
+                        self.cursor.0 += 1;
+                    } else {
+                        self.column_offset += 1;
+                    }
                 }
             }
             Key::ArrowLeft | Key::Other(b'h') => {
-                if self.cursor.0 > 0 {
-                    self.cursor.0 -= 1
+                if self.cursor.0 + self.column_offset > 0 {
+                    if self.cursor.0 > 0 {
+                        self.cursor.0 -= 1;
+                    } else {
+                        self.column_offset -= 1;
+                    }
                 }
             }
             Key::ArrowDown | Key::Other(b'j') => {
@@ -124,8 +151,12 @@ impl Editor {
     pub fn editor_open_file(&mut self) {
         self.content.lines.clear();
 
-        let file = File::open(self.filename.clone()).unwrap();
-        let reader = io::BufReader::new(file);
+        let file = File::open(self.filename.clone());
+        if let Err(e) = file {
+            log!("Failed to open file: {}", e);
+            return;
+        }
+        let reader = io::BufReader::new(file.unwrap());
         let lines = reader.lines();
 
         for line in lines {
