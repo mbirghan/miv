@@ -44,6 +44,7 @@ impl Screen {
     }
 
     // TODO: I am passing way too many arguments here
+    // TODO: This is a mess, the cursor computation makes this very hard to read
     pub fn editor_refresh_screen(
         &mut self,
         content: Content,
@@ -63,17 +64,40 @@ impl Screen {
         // We need to do this to start drawing from the top left corner
         self.append_abuf("\x1b[H");
 
+        let content_line = content.lines[cursor.1 + row_offset].clone();
+        let (new_column_offset, new_cursor_x) =
+            self.get_horizontal_cursor_position(&content_line, cursor.0, column_offset);
+
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_content(content, row_offset, column_offset);
+        self.draw_content(content, row_offset, new_column_offset);
 
-        self.append_abuf(&format!("\x1b[{};{}H", cursor.1 + 1, cursor.0 + 1));
+        self.append_abuf(&format!("\x1b[{};{}H", cursor.1 + 1, new_cursor_x));
 
         // Show the cursor again
         self.append_abuf("\x1b[?25h");
 
         write_flush(str::from_utf8(&self.abuf).unwrap());
         trace!("Screen refreshed");
+    }
+
+    // TODO: Move this somewhere else
+    pub fn get_horizontal_cursor_position(
+        &self,
+        content_line: &str,
+        cursor_x: usize,
+        column_offset: usize,
+    ) -> (usize, usize) {
+        // We assume that the cursor is between 0 and the screen width
+        if cursor_x + column_offset < content_line.len() {
+            (column_offset, cursor_x)
+        } else {
+            if content_line.len() > column_offset {
+                (column_offset, content_line.len() - column_offset)
+            } else {
+                (content_line.len() - 1, 0)
+            }
+        }
     }
 
     fn draw_content(&mut self, content: Content, row_offset: usize, column_offset: usize) {
@@ -88,12 +112,16 @@ impl Screen {
             }
         }
     }
+
+    // TODO: For some reason the lines are flickering when scrolling left and right
     fn draw_content_rows(
         &mut self,
         content: Content,
         row_offset: usize,
         column_offset: usize,
     ) -> Result<(), Error> {
+        trace!("Drawing content rows");
+
         let lines = content.lines.clone();
 
         // Only iterate up to the minimum of screen height and content length

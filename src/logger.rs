@@ -69,7 +69,7 @@ impl Logger {
     }
 
     pub fn log(&mut self, level: LogLevel, message: &str) {
-        if level >= LOG_LEVEL {
+        if level >= *LOG_LEVEL {
             let level_str = level.to_string();
             let log_message = format!("[{}] [{}]: {}\n", self.get_timestamp(), level_str, message);
             self.log_file.write_all(log_message.as_bytes()).unwrap();

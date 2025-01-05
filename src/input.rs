@@ -26,7 +26,9 @@ impl Input {
 
     pub fn read_key(&self) -> Key {
         let c = self.read_byte();
-        trace!("Read key: {}", c);
+        if c != 0 {
+            trace!("Read key: {}", c);
+        }
 
         match c {
             b'\x1b' => self.read_escape(),

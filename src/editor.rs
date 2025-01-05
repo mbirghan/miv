@@ -108,6 +108,8 @@ impl Editor {
                 }
             }
             Key::ArrowRight | Key::Other(b'l') => {
+                self.reset_cursor();
+
                 if self.cursor.0 + self.column_offset
                     < (self
                         .screen
@@ -123,6 +125,8 @@ impl Editor {
                 }
             }
             Key::ArrowLeft | Key::Other(b'h') => {
+                self.reset_cursor();
+
                 if self.cursor.0 + self.column_offset > 0 {
                     if self.cursor.0 > 0 {
                         self.cursor.0 -= 1;
@@ -146,6 +150,17 @@ impl Editor {
         }
         trace!("Cursor: {:?}", self.cursor);
         trace!("Row offset: {}", self.row_offset);
+    }
+
+    fn reset_cursor(&mut self) {
+        // Resetting the cursor position to a valid position
+        let (new_column_offset, new_cursor_x) = self.screen.get_horizontal_cursor_position(
+            &self.content.lines[self.cursor.1 + self.row_offset],
+            self.cursor.0,
+            self.column_offset,
+        );
+        self.column_offset = new_column_offset;
+        self.cursor.0 = new_cursor_x;
     }
 
     pub fn editor_open_file(&mut self) {
