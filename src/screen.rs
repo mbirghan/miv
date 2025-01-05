@@ -48,11 +48,22 @@ impl Screen {
     pub fn editor_refresh_screen(
         &mut self,
         content: Content,
-        cursor: (usize, usize),
+        cursor_row: usize,
+        cursor_column: usize,
         row_offset: usize,
         column_offset: usize,
     ) {
         trace!("Refreshing screen");
+        trace!(
+            "Row offset: {}, Column offset: {}",
+            row_offset,
+            column_offset
+        );
+        trace!(
+            "Cursor row: {}, Cursor column: {}",
+            cursor_row,
+            cursor_column
+        );
 
         // Hide the cursor to avoid flickering
         self.append_abuf("\x1b[?25l");
@@ -64,40 +75,21 @@ impl Screen {
         // We need to do this to start drawing from the top left corner
         self.append_abuf("\x1b[H");
 
-        let content_line = content.lines[cursor.1 + row_offset].clone();
-        let (new_column_offset, new_cursor_x) =
-            self.get_horizontal_cursor_position(&content_line, cursor.0, column_offset);
-
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_content(content, row_offset, new_column_offset);
+        self.draw_content(content, row_offset, column_offset);
 
-        self.append_abuf(&format!("\x1b[{};{}H", cursor.1 + 1, new_cursor_x));
+        self.append_abuf(&format!(
+            "\x1b[{};{}H",
+            (cursor_row - row_offset) + 1,
+            (cursor_column - column_offset) + 1
+        ));
 
         // Show the cursor again
         self.append_abuf("\x1b[?25h");
 
         write_flush(str::from_utf8(&self.abuf).unwrap());
         trace!("Screen refreshed");
-    }
-
-    // TODO: Move this somewhere else
-    pub fn get_horizontal_cursor_position(
-        &self,
-        content_line: &str,
-        cursor_x: usize,
-        column_offset: usize,
-    ) -> (usize, usize) {
-        // We assume that the cursor is between 0 and the screen width
-        if cursor_x + column_offset < content_line.len() {
-            (column_offset, cursor_x)
-        } else {
-            if content_line.len() > column_offset {
-                (column_offset, content_line.len() - column_offset)
-            } else {
-                (content_line.len() - 1, 0)
-            }
-        }
     }
 
     fn draw_content(&mut self, content: Content, row_offset: usize, column_offset: usize) {

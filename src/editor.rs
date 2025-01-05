@@ -23,7 +23,9 @@ pub struct Editor {
     content: Content,
     filename: String,
 
-    cursor: (usize, usize),
+    cursor_row: usize,
+    cursor_column: usize,
+
     row_offset: usize,
     column_offset: usize,
 }
@@ -40,7 +42,8 @@ impl Editor {
             input,
             content: Content::new(),
             filename: "logs/test-file.txt".to_string(),
-            cursor: (0, 0),
+            cursor_row: 0,
+            cursor_column: 0,
             row_offset: 0,
             column_offset: 0,
         })
@@ -59,7 +62,8 @@ impl Editor {
         // Refresh screen to show the initial content
         self.screen.editor_refresh_screen(
             self.content.clone(),
-            self.cursor,
+            self.cursor_row,
+            self.cursor_column,
             self.row_offset,
             self.column_offset,
         );
@@ -83,11 +87,18 @@ impl Editor {
                 _ => {
                     // We read a movement key and should refresh the screen
                     self.move_cursor(key);
+
+                    let (new_column_offset, new_cursor_x) = self.get_horizontal_cursor_position(
+                        &self.content.lines[self.cursor_row + self.row_offset],
+                        self.cursor_column,
+                        self.column_offset,
+                    );
                     self.screen.editor_refresh_screen(
                         self.content.clone(),
-                        self.cursor,
+                        self.cursor_row,
+                        new_cursor_x,
                         self.row_offset,
-                        self.column_offset,
+                        new_column_offset,
                     );
                 }
             }
@@ -98,69 +109,88 @@ impl Editor {
 
     fn move_cursor(&mut self, key: Key) {
         match key {
-            Key::ArrowUp | Key::Other(b'k') => {
-                if self.cursor.1 + self.row_offset > 0 {
-                    if self.cursor.1 > 0 {
-                        self.cursor.1 -= 1;
-                    } else {
-                        self.row_offset -= 1;
-                    }
-                }
-            }
-            Key::ArrowRight | Key::Other(b'l') => {
-                self.reset_cursor();
-
-                if self.cursor.0 + self.column_offset
-                    < (self
-                        .screen
-                        .get_width()
-                        .max(self.content.lines[self.cursor.1 + self.row_offset].len())
-                        - 1)
-                {
-                    if self.cursor.0 < self.screen.get_width() - 1 {
-                        self.cursor.0 += 1;
-                    } else {
-                        self.column_offset += 1;
-                    }
-                }
-            }
-            Key::ArrowLeft | Key::Other(b'h') => {
-                self.reset_cursor();
-
-                if self.cursor.0 + self.column_offset > 0 {
-                    if self.cursor.0 > 0 {
-                        self.cursor.0 -= 1;
-                    } else {
-                        self.column_offset -= 1;
-                    }
-                }
-            }
-            Key::ArrowDown | Key::Other(b'j') => {
-                if self.cursor.1 + self.row_offset
-                    < (self.screen.get_height().max(self.content.lines.len()) - 1)
-                {
-                    if self.cursor.1 < self.screen.get_height() - 1 {
-                        self.cursor.1 += 1;
-                    } else {
-                        self.row_offset += 1;
-                    }
-                }
-            }
+            Key::ArrowUp | Key::Other(b'k') => self.move_cursor_up(),
+            Key::ArrowDown | Key::Other(b'j') => self.move_cursor_down(),
+            Key::ArrowRight | Key::Other(b'l') => self.move_cursor_right(),
+            Key::ArrowLeft | Key::Other(b'h') => self.move_cursor_left(),
             _ => {}
         }
-        trace!("Cursor: {:?}", self.cursor);
-        trace!("Row offset: {}", self.row_offset);
+        trace!("Cursor: {}, {}", self.cursor_row, self.cursor_column);
+        trace!("Offset: {}, {}", self.row_offset, self.column_offset);
+    }
+
+    fn move_cursor_up(&mut self) {
+        if self.cursor_row > 0 {
+            self.cursor_row -= 1;
+
+            if self.cursor_row < self.row_offset {
+                self.row_offset -= 1;
+            }
+        }
+    }
+
+    fn move_cursor_down(&mut self) {
+        if self.cursor_row < self.content.lines.len() - 1 {
+            self.cursor_row += 1;
+
+            if self.cursor_row > self.row_offset + self.screen.get_height() - 1 {
+                self.row_offset += 1;
+            }
+        }
+    }
+
+    fn move_cursor_left(&mut self) {
+        self.reset_cursor();
+
+        if self.cursor_column > 0 {
+            self.cursor_column -= 1;
+
+            if self.cursor_column < self.column_offset {
+                self.column_offset -= 1;
+            }
+        }
+    }
+
+    fn move_cursor_right(&mut self) {
+        self.reset_cursor();
+
+        if self.cursor_column < self.content.lines[self.cursor_row + self.row_offset].len() - 1 {
+            self.cursor_column += 1;
+
+            if self.cursor_column > self.column_offset + self.screen.get_width() - 1 {
+                self.column_offset += 1;
+            }
+        }
     }
 
     fn reset_cursor(&mut self) {
         // Resetting the cursor position to a valid position
-        let (new_column_offset, new_cursor_x) = self.screen.get_horizontal_cursor_position(
-            &self.content.lines[self.cursor.1 + self.row_offset],
-            self.cursor.0,
+        let (new_column_offset, new_cursor_x) = self.get_horizontal_cursor_position(
+            &self.content.lines[self.cursor_row + self.row_offset],
+            self.cursor_column,
             self.column_offset,
         );
         self.column_offset = new_column_offset;
-        self.cursor.0 = new_cursor_x;
+        self.cursor_column = new_cursor_x;
+    }
+
+    pub fn get_horizontal_cursor_position(
+        &self,
+        content_line: &str,
+        cursor_x: usize,
+        column_offset: usize,
+    ) -> (usize, usize) {
+        if cursor_x >= content_line.len() {
+            let new_cursor_x = content_line.len() - 1;
+
+            if new_cursor_x > column_offset {
+                (column_offset, new_cursor_x)
+            } else {
+                (new_cursor_x, new_cursor_x)
+            }
+        } else {
+            (column_offset, cursor_x)
+        }
     }
 
     pub fn editor_open_file(&mut self) {
