@@ -1,4 +1,6 @@
 use crate::logger::LogLevel;
+use once_cell::sync::Lazy;
+use std::env;
 
 // Version info
 pub const VERSION: &'static str = "0.0.1";
@@ -10,4 +12,6 @@ pub const VERSION: &'static str = "0.0.1";
 pub const BLOCKING: bool = false;
 
 // Log level
-pub const LOG_LEVEL: LogLevel = LogLevel::Info;
+pub static LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
+    LogLevel::from_string_or_default(&env::var("MIV_LOG_LEVEL").unwrap_or("INFO".to_string()))
+});

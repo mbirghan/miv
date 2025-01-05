@@ -16,6 +16,35 @@ pub enum LogLevel {
     Fatal,
 }
 
+impl LogLevel {
+    pub fn to_string(&self) -> &str {
+        match self {
+            LogLevel::Trace => "TRACE",
+            LogLevel::Debug => "DEBUG",
+            LogLevel::Info => "INFO",
+            LogLevel::Warn => "WARN",
+            LogLevel::Error => "ERROR",
+            LogLevel::Fatal => "FATAL",
+        }
+    }
+
+    pub fn from_string(level: &str) -> Option<LogLevel> {
+        match level {
+            "TRACE" => Some(LogLevel::Trace),
+            "DEBUG" => Some(LogLevel::Debug),
+            "INFO" => Some(LogLevel::Info),
+            "WARN" => Some(LogLevel::Warn),
+            "ERROR" => Some(LogLevel::Error),
+            "FATAL" => Some(LogLevel::Fatal),
+            _ => None,
+        }
+    }
+
+    pub fn from_string_or_default(level: &str) -> LogLevel {
+        LogLevel::from_string(level).unwrap_or(LogLevel::Info)
+    }
+}
+
 pub struct Logger {
     log_file: File,
 }
@@ -41,14 +70,7 @@ impl Logger {
 
     pub fn log(&mut self, level: LogLevel, message: &str) {
         if level >= LOG_LEVEL {
-            let level_str = match level {
-                LogLevel::Trace => "TRACE",
-                LogLevel::Debug => "DEBUG",
-                LogLevel::Info => "INFO",
-                LogLevel::Warn => "WARN",
-                LogLevel::Error => "ERROR",
-                LogLevel::Fatal => "FATAL",
-            };
+            let level_str = level.to_string();
             let log_message = format!("[{}] [{}]: {}\n", self.get_timestamp(), level_str, message);
             self.log_file.write_all(log_message.as_bytes()).unwrap();
         }

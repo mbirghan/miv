@@ -114,6 +114,7 @@ name = "miv"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "once_cell",
  "term_size",
  "termios",
 ]
