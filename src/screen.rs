@@ -127,7 +127,8 @@ impl Screen {
             let line_start = column_offset;
             let line_end = line.len().min(self.get_width() + column_offset);
             if line_start < line_end {
-                self.append_abuf(&line[line_start..line_end]); // No need for to_vec()
+                // TODO: This replacement should be done in the content or screen struct
+                self.append_abuf(&line[line_start..line_end].to_string().replace("\t", "    "));
             }
 
             // Clears the line we are rerendering
