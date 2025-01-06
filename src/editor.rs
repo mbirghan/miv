@@ -90,7 +90,7 @@ impl Editor {
                     self.move_cursor(key);
 
                     let (new_column_offset, new_cursor_x) = self.get_horizontal_cursor_position(
-                        &self.content.lines[self.cursor_row + self.row_offset],
+                        &self.content.lines[self.cursor_row],
                         self.cursor_column,
                         self.column_offset,
                     );
@@ -162,7 +162,7 @@ impl Editor {
     fn move_cursor_right(&mut self) {
         self.reset_cursor();
 
-        if self.cursor_column < self.content.lines[self.cursor_row + self.row_offset].len() - 1 {
+        if self.cursor_column < self.content.lines[self.cursor_row].len() - 1 {
             self.cursor_column += 1;
 
             if self.cursor_column > self.column_offset + self.screen.get_width() - 1 {
@@ -182,7 +182,7 @@ impl Editor {
     }
 
     fn move_cursor_to_end_of_line(&mut self) {
-        self.cursor_column = self.content.lines[self.cursor_row + self.row_offset].len() - 1;
+        self.cursor_column = self.content.lines[self.cursor_row].len() - 1;
 
         if self.cursor_column >= self.screen.get_width() {
             self.column_offset = self.cursor_column - self.screen.get_width() + 1;
@@ -194,7 +194,7 @@ impl Editor {
     fn reset_cursor(&mut self) {
         // Resetting the cursor position to a valid position
         let (new_column_offset, new_cursor_x) = self.get_horizontal_cursor_position(
-            &self.content.lines[self.cursor_row + self.row_offset],
+            &self.content.lines[self.cursor_row],
             self.cursor_column,
             self.column_offset,
         );
