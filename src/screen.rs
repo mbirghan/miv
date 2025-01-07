@@ -77,12 +77,15 @@ impl Screen {
 
         // Show the window size
         // self.append_abuf(&format!("{}, {}   ", self.get_height(), self.get_width()));
-        self.draw_content(content, row_offset, column_offset);
+        self.draw_content(&content, row_offset, column_offset);
+
+        let tabs_at_or_before_cursor =
+            self.tabs_at_or_before_cursor(&content.lines[cursor_row], cursor_column);
 
         self.append_abuf(&format!(
             "\x1b[{};{}H",
             (cursor_row - row_offset) + 1,
-            (cursor_column - column_offset) + 1
+            (cursor_column - column_offset) + 1 + (tabs_at_or_before_cursor * 3)
         ));
 
         // Show the cursor again
@@ -92,7 +95,7 @@ impl Screen {
         trace!("Screen refreshed");
     }
 
-    fn draw_content(&mut self, content: Content, row_offset: usize, column_offset: usize) {
+    fn draw_content(&mut self, content: &Content, row_offset: usize, column_offset: usize) {
         // Extract content reference before the mutable borrows
         let content_len = content.lines.len();
         match content_len {
@@ -108,7 +111,7 @@ impl Screen {
     // TODO: For some reason the lines are flickering when scrolling left and right
     fn draw_content_rows(
         &mut self,
-        content: Content,
+        content: &Content,
         row_offset: usize,
         column_offset: usize,
     ) -> Result<(), Error> {
@@ -162,6 +165,16 @@ impl Screen {
 
         self.append_abuf("\r\n");
         self.draw_filler_rows(1);
+    }
+
+    fn tabs_at_or_before_cursor(&self, line: &str, cursor_column: usize) -> usize {
+        let mut tabs = 0;
+        for i in 0..cursor_column + 1 {
+            if line.chars().nth(i).unwrap() == '\t' {
+                tabs += 1;
+            }
+        }
+        tabs
     }
 }
 
