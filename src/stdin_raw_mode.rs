@@ -1,4 +1,4 @@
-use crate::constants::BLOCKING;
+use crate::constants::BLOCKING_READ;
 use std::io::{self, Error};
 use std::os::fd::AsRawFd;
 use termios::*;
@@ -24,7 +24,7 @@ impl StdinRawMode {
         raw.c_cflag |= CS8;
         raw.c_lflag &= !(ECHO | ICANON | ISIG | IEXTEN);
 
-        if BLOCKING {
+        if *BLOCKING_READ {
             // Blocking read
             // downside: pressing esc will not be read until a key is pressed as it could be part of an escape sequence
             raw.c_cc[VMIN] = 1;

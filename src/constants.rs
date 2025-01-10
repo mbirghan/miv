@@ -9,7 +9,12 @@ pub const VERSION: &'static str = "0.0.1";
 // Blocking read: pressing esc will not be read until a key is pressed as it could be part of an escape sequence
 // Non-blocking read: we will consistently read 0 bytes until a key is pressed which could lead to consistent rerendering
 // Using non-blocking read for now to allow for esc to be read
-pub const BLOCKING: bool = false;
+pub const BLOCKING_READ: Lazy<bool> = Lazy::new(|| {
+    env::var("MIV_BLOCKING_READ")
+        .unwrap_or("false".to_string())
+        .parse()
+        .unwrap()
+});
 
 // Log level
 pub static LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
@@ -17,4 +22,9 @@ pub static LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
 });
 
 // Tab width
-pub const TAB_WIDTH: usize = 4;
+pub const TAB_WIDTH: Lazy<usize> = Lazy::new(|| {
+    env::var("MIV_TAB_WIDTH")
+        .unwrap_or("4".to_string())
+        .parse()
+        .unwrap()
+});

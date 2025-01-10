@@ -85,7 +85,7 @@ impl Screen {
         self.append_abuf(&format!(
             "\x1b[{};{}H",
             (cursor_row - row_offset) + 1,
-            (cursor_column - column_offset) + 1 + (tabs_at_or_before_cursor * (TAB_WIDTH - 1))
+            (cursor_column - column_offset) + 1 + (tabs_at_or_before_cursor * (*TAB_WIDTH - 1))
         ));
 
         // Show the cursor again
@@ -134,7 +134,7 @@ impl Screen {
                 self.append_abuf(
                     &line[line_start..line_end]
                         .to_string()
-                        .replace("\t", " ".repeat(TAB_WIDTH).as_str()),
+                        .replace("\t", " ".repeat(*TAB_WIDTH).as_str()),
                 );
             }
 
