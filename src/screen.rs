@@ -1,5 +1,5 @@
 use crate::content::Content;
-use crate::{constants::VERSION, trace};
+use crate::{constants::TAB_WIDTH, constants::VERSION, trace};
 use core::str;
 use std::{
     io::{self, Error, Write},
@@ -85,7 +85,7 @@ impl Screen {
         self.append_abuf(&format!(
             "\x1b[{};{}H",
             (cursor_row - row_offset) + 1,
-            (cursor_column - column_offset) + 1 + (tabs_at_or_before_cursor * 3)
+            (cursor_column - column_offset) + 1 + (tabs_at_or_before_cursor * (TAB_WIDTH - 1))
         ));
 
         // Show the cursor again
@@ -131,7 +131,11 @@ impl Screen {
             let line_end = line.len().min(self.get_width() + column_offset);
             if line_start < line_end {
                 // TODO: This replacement should be done in the content or screen struct
-                self.append_abuf(&line[line_start..line_end].to_string().replace("\t", "    "));
+                self.append_abuf(
+                    &line[line_start..line_end]
+                        .to_string()
+                        .replace("\t", " ".repeat(TAB_WIDTH).as_str()),
+                );
             }
 
             // Clears the line we are rerendering

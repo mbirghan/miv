@@ -15,3 +15,6 @@ pub const BLOCKING: bool = false;
 pub static LOG_LEVEL: Lazy<LogLevel> = Lazy::new(|| {
     LogLevel::from_string_or_default(&env::var("MIV_LOG_LEVEL").unwrap_or("INFO".to_string()))
 });
+
+// Tab width
+pub const TAB_WIDTH: usize = 4;
