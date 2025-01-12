@@ -1,13 +1,11 @@
-use miv::{log, Editor};
-use std::env;
+use clap::Parser;
+use miv::{CliArguments, Editor};
+
 fn main() {
+    let args = CliArguments::parse();
     let mut editor = Editor::new().unwrap();
 
-    let args: Vec<String> = env::args().collect();
-    if args.len() > 1 {
-        log!("Got arguments: {:?}", args);
-
-        let filename = args[1].clone();
+    if let Some(filename) = args.file {
         editor.editor_open_with_file(filename);
     } else {
         editor.editor_open();
